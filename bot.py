@@ -1,4 +1,4 @@
-import os, logging, random
+import os, logging, random, asyncio
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.constants import ChatMemberStatus
@@ -130,10 +130,13 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
    await q.edit_message_text('Pehle kam se kam ek photo bhejo, phir Done dabao.',reply_markup=photo_buttons()); return
   if (f.get('caption') or '').strip():
    f['step']='preview'
+   await q.edit_message_text('✅ Photos complete. Photo ke saath diya gaya caption use kar raha hoon.')
    await send_preview(context,uid,f)
-   await q.edit_message_text('✅ Photo ke saath diya gaya caption use kar liya. Ye raha preview:',reply_markup=post_buttons())
+   await context.bot.send_message(chat_id=uid, text='👆 Preview ke neeche se next action choose karo:', reply_markup=post_buttons())
   else:
-   f['step']='caption_choice'; await q.edit_message_text('📝 Caption kaise banana hai?',reply_markup=caption_buttons())
+   f['step']='caption_choice'
+   await q.edit_message_text('✅ Photos complete. Ab neeche caption option choose karo.')
+   await context.bot.send_message(chat_id=uid, text='📝 Caption kaise banana hai?', reply_markup=caption_buttons())
   return
  if data=='photos_more':
   f=FLOW.get(uid)
@@ -158,7 +161,9 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
   f=FLOW.get(uid)
   if not f: await q.edit_message_text('Session expire. /start dabao.',reply_markup=back()); return
   f['caption']=with_brand_hashtags(random.choice(CAPTIONS.get(data[6:],CAPTIONS['🚀 Trending Gaming'])))
-  f['step']='preview'; await send_preview(context,uid,f); await q.edit_message_text('👆 Ye raha aapka post preview. Kya karna hai?',reply_markup=post_buttons()); return
+  f['step']='preview'; await q.edit_message_text('✅ Caption ready. Preview neeche bhej raha hoon.')
+  await send_preview(context,uid,f)
+  await context.bot.send_message(chat_id=uid, text='👆 Preview ke neeche se next action choose karo:', reply_markup=post_buttons()); return
  if data=='post_auto' or data=='post_manual':
   f=FLOW.get(uid)
   if not f or f.get('step')!='preview': await q.edit_message_text('Pehle post preview banao.',reply_markup=back()); return
@@ -212,7 +217,9 @@ async def _send_photo_batch_status(context, uid, chat_id):
  except Exception:
   log.exception('Could not send batched photo status for user %s', uid)
  finally:
-  PHOTO_BATCH_TASKS.pop(uid, None)
+  current = asyncio.current_task()
+  if PHOTO_BATCH_TASKS.get(uid) is current:
+   PHOTO_BATCH_TASKS.pop(uid, None)
 
 async def handle_photo(update:Update,context:ContextTypes.DEFAULT_TYPE):
  uid=update.effective_user.id; msg=update.effective_message; f=FLOW.get(uid)
@@ -234,15 +241,22 @@ async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
  if not f: await msg.reply_text('Menu ke liye /start dabao.',reply_markup=menu()); return
  if f.get('step')=='own_caption':
   if len(txt)>900: await msg.reply_text('Caption 900 characters se chhota rakho.'); return
-  f['caption']=with_brand_hashtags(txt); f['step']='preview'; await send_preview(context,uid,f); await msg.reply_text('👆 Post preview ready hai. Choose:',reply_markup=post_buttons()); return
+  f['caption']=with_brand_hashtags(txt); f['step']='preview'; await msg.reply_text('✅ Caption save ho gaya. Preview neeche hai.')
+  await send_preview(context,uid,f)
+  await msg.reply_text('👆 Preview ke neeche se next action choose karo:',reply_markup=post_buttons()); return
  if f.get('step')=='connect':
   try:
-   target = int(txt) if txt.lstrip('-').isdigit() else txt
+   target_text = txt.strip()
+   if target_text.startswith('https://t.me/'):
+    target_text = '@' + target_text.rstrip('/').split('/')[-1]
+   target = int(target_text) if target_text.lstrip('-').isdigit() else target_text
    chat=await context.bot.get_chat(target)
    if chat.type != 'channel': raise TelegramError('Ye ID/username Telegram channel ka nahi hai.')
    await verify_channel(context,chat.id); set_user_channel(uid,str(chat.id)); FLOW.pop(uid,None)
    await msg.reply_text(f'✅ Channel connected: {chat.title or chat.username or chat.id}',reply_markup=menu())
-  except TelegramError as e: await msg.reply_text('❌ Connect nahi hua. Bot admin, channel ID aur Post Messages permission check karo.\n'+str(e)[:220],reply_markup=back())
+  except Exception as e:
+   log.exception('Channel connect failed for user %s input %s', uid, txt)
+   await msg.reply_text('❌ Connect nahi hua. Check: username public/sahi ho, bot isi channel ka admin ho aur Post Messages permission ho. Private channel mein numeric -100... ID use karo.\nError: '+str(e)[:250],reply_markup=back())
   return
  await msg.reply_text('Current step par diye gaye buttons use karo. Cancel ke liye /cancel bhejo.')
 async def my_chat_member(update:Update,context:ContextTypes.DEFAULT_TYPE):
@@ -282,12 +296,21 @@ async def text_router(update,context):
  await handle_text(update,context)
 async def photo_router(update,context):
  await handle_photo(update,context)
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+ log.exception('Unhandled bot error', exc_info=context.error)
+ try:
+  if isinstance(update, Update) and update.effective_message:
+   await update.effective_message.reply_text('⚠️ Bot ke andar error aaya. Admin ko Logs check karne honge; please wahi action dobara try karo.')
+ except Exception:
+  log.exception('Could not send error notice')
+
 async def post_init(app): init_db(); log.info('%s started',BOT_NAME)
 def main():
  if not TOKEN: raise SystemExit('Set BOT_TOKEN in .env before running.')
  app=Application.builder().token(TOKEN).post_init(post_init).build()
  app.add_handler(CommandHandler('start',start)); app.add_handler(CommandHandler('connect',connect_command)); app.add_handler(CommandHandler('cancel',cancel))
  app.add_handler(CallbackQueryHandler(callback)); app.add_handler(ChatMemberHandler(my_chat_member,ChatMemberHandler.MY_CHAT_MEMBER))
- app.add_handler(MessageHandler(filters.PHOTO,photo_router)); app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,text_router))
+ app.add_handler(MessageHandler(filters.PHOTO,photo_router)); app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,text_router)); app.add_error_handler(error_handler)
  app.run_polling(allowed_updates=Update.ALL_TYPES)
 if __name__=='__main__': main()
