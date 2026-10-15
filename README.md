@@ -1,6 +1,6 @@
 # NoxiQueen Gaming Post Bot
 
-Telegram bot for making BGMI/PUBG gaming posts from separate photos (no collage), with caption templates, preview, channel auto-post/manual-ready flow, and a basic thumbnail title overlay.
+Telegram bot for making BGMI/PUBG gaming posts from separate photos (no collage), with caption templates, preview, channel auto-post/manual-ready flow.
 
 ## Features
 - Create a post from 1–10 photos. Photos remain separate in a Telegram album.
@@ -8,8 +8,7 @@ Telegram bot for making BGMI/PUBG gaming posts from separate photos (no collage)
 - Preview album and caption before posting.
 - Auto-post to the connected Telegram channel, or choose Manual Post to keep the preview ready for manual posting.
 - Auto-detect a channel when the bot receives a channel-admin status update. Set `OWNER_ID` to your numeric Telegram user ID for auto-connect.
-- `/thumbnail` makes a basic 16:9 thumbnail from a photo and the title text you provide. It overlays text; it does not use AI to understand the photo.
-- `/start`, `/cancel`, `/thumbnail` commands.
+- `/start` and `/cancel` commands.
 
 ## Setup
 1. Install Python 3.10+.
@@ -25,6 +24,5 @@ Add the bot to your Telegram channel as an administrator and enable **Post Messa
 - The bot can only post to channels where it has admin rights and Post Messages permission.
 - Telegram media albums support up to 10 photos.
 - Generated captions use built-in templates; no external AI API is required.
-- Thumbnail Maker adds your title text to the provided photo. It is a simple design overlay, not full AI thumbnail generation.
 - The in-progress photo/caption workflow is held in memory; a restart interrupts an unfinished draft. SQLite feedback records persist.
 - For hosting, keep only one polling instance running with the same bot token.

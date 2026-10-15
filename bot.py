@@ -198,8 +198,9 @@ async def send_album(context,chat_id,photos,caption):
  await context.bot.send_media_group(chat_id=chat_id,media=media)
 async def verify_channel(context,channel):
  me=await context.bot.get_me(); m=await context.bot.get_chat_member(chat_id=channel,user_id=me.id)
- if m.status not in (ChatMemberStatus.ADMINISTRATOR,ChatMemberStatus.CREATOR): raise TelegramError('Bot channel admin nahi hai.')
- if m.status==ChatMemberStatus.ADMINISTRATOR and not getattr(m,'can_post_messages',False): raise TelegramError('Bot ke paas Post Messages permission nahi hai.')
+ status = getattr(m.status, 'value', m.status)
+ if status not in ('administrator', 'creator'): raise TelegramError('Bot channel admin nahi hai.')
+ if status == 'administrator' and not getattr(m,'can_post_messages',False): raise TelegramError('Bot ke paas Post Messages permission nahi hai.')
 async def _send_photo_batch_status(context, uid, chat_id):
  # Telegram delivers each item in an album as a separate update. Wait briefly,
  # then send one status message for the whole burst instead of one per photo.
@@ -262,7 +263,7 @@ async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
 async def my_chat_member(update:Update,context:ContextTypes.DEFAULT_TYPE):
  cm=update.my_chat_member; chat=cm.chat; new=cm.new_chat_member
  if chat.type!='channel': return
- if new.status in (ChatMemberStatus.ADMINISTRATOR,ChatMemberStatus.CREATOR):
+ if getattr(new.status, 'value', new.status) in ('administrator', 'creator'):
   # Connect the channel to the Telegram user who added/promoted the bot.
   actor=update.my_chat_member.from_user
   try:
