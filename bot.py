@@ -1,5 +1,4 @@
-import os, logging, asyncio, random, re
-from io import BytesIO
+import os, logging, random
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.constants import ChatMemberStatus
@@ -40,9 +39,9 @@ CAPTIONS = {
 }
 
 def menu():
- return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel')], [InlineKeyboardButton('🗂️ Post History', callback_data='history')], [InlineKeyboardButton('🗑️ Delete All History', callback_data='delete_history'), InlineKeyboardButton('❓ Help', callback_data='help')]])
+ return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel'), InlineKeyboardButton('❓ Help', callback_data='help')]])
 def back(): return InlineKeyboardMarkup([[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])
-def photo_buttons(): return InlineKeyboardMarkup([[InlineKeyboardButton('➕ More Photos', callback_data='more_photos'), InlineKeyboardButton('✅ Done', callback_data='photos_done')], [InlineKeyboardButton('❌ Cancel', callback_data='home')]])
+def photo_buttons(): return InlineKeyboardMarkup([[InlineKeyboardButton('✅ All Photos Done', callback_data='photos_done')], [InlineKeyboardButton('❌ Cancel', callback_data='home')]])
 def caption_buttons():
  rows=[[InlineKeyboardButton('✍️ Write My Own Caption', callback_data='own_caption')],[InlineKeyboardButton('✨ Generate Gaming Caption', callback_data='auto_caption')],[InlineKeyboardButton('❌ Cancel', callback_data='home')]]
  return InlineKeyboardMarkup(rows)
@@ -60,11 +59,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
  if data=='home': await show_home(q,uid); return
  if data=='new':
   FLOW[uid]={'step':'photos','photos':[],'caption':''}
-  await q.edit_message_text('📸 1–10 photos bhejo (alag-alag ya album mein). Har photo ke baad latest message ke neeche ✅ Done aur ➕ More Photos buttons milenge. Collage nahi banega.',reply_markup=photo_buttons()); return
- if data=='more_photos':
-  f=FLOW.get(uid)
-  if not f or f.get('step')!='photos': await q.message.reply_text('Photo step expire ho gaya. /start se naya post banao.',reply_markup=menu()); return
-  await q.message.reply_text(f"📸 Aur photos bhejo. Abhi {len(f['photos'])}/10 hain.\nDone dabao jab complete ho.",reply_markup=photo_buttons()); return
+  await q.edit_message_text('📸 Apni 1–10 photos bhejo (ek-ek karke ya Telegram album mein). Har photo add hone ke baad yahin Done dabana. Collage nahi banega—photos album mein separate rahengi.',reply_markup=photo_buttons()); return
  if data=='photos_done':
   f=FLOW.get(uid)
   if not f or f['step']!='photos' or not f['photos']:
@@ -105,22 +100,14 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
    fid=create_feedback(uid,f['caption'],len(f['photos']),'MANUAL'); update_feedback_status(fid,'MANUAL_READY','')
    FLOW.pop(uid,None); await q.edit_message_text(f'📤 Manual post ready hai. Upar jo preview album aur caption mila hai, use apne channel par manually forward/post kar sakte ho.\nID: #{fid}',reply_markup=back())
   return
+ if data=='thumb_help':
+  await q.edit_message_text('🖼️ Thumbnail Maker\n\n/thumbnail bhejo, phir photo aur title text bhejo. Bot photo par title overlay karke thumbnail dega. Ye basic design hai; photo ko samajhkar AI caption nahi banata.',reply_markup=back()); return
  if data=='channel':
   user=get_user(uid); await q.edit_message_text('📡 CHANNEL STATUS\n\n'+('Connected channel ID: '+str(user['channel']) if user.get('channel') else 'Abhi channel connect nahi hai.')+'\n\nBot ko channel mein admin banao aur Post Messages permission do. Auto-detection na ho to public channel ke liye /connect @channelusername use karo.',reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔗 Connect by username/ID',callback_data='connect')],[InlineKeyboardButton('🏠 Main Menu',callback_data='home')]])); return
  if data=='connect':
   FLOW[uid]={'step':'connect'}; await q.edit_message_text('Channel ka @username ya numeric ID bhejo. Bot pehle se channel admin hona chahiye aur Post Messages permission honi chahiye.',reply_markup=back()); return
- if data=='history':
-  rows=list_feedback(uid, limit=10)
-  if not rows: await q.edit_message_text('🗂️ Abhi koi post history nahi hai.',reply_markup=back()); return
-  lines=['🗂️ Recent Post History (latest 10):']
-  for r in rows: lines.append(f"#{r['id']} • {r['status']} • {r['photo_count']} photos • {r['created_at'][:10]}")
-  await q.edit_message_text('\n'.join(lines),reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🗑️ Delete All History',callback_data='delete_history')],[InlineKeyboardButton('🏠 Main Menu',callback_data='home')]])); return
- if data=='delete_history':
-  await q.edit_message_text('⚠️ Saari saved post history delete karni hai?\n\nYe bot ki database history delete karega; Telegram channel par pehle se published posts ko nahi.',reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🗑️ Yes, Delete History',callback_data='confirm_delete_history')],[InlineKeyboardButton('❌ Cancel',callback_data='home')]])); return
- if data=='confirm_delete_history':
-  count=delete_all_feedback(uid); await q.edit_message_text(f'✅ {count} history records delete ho gaye. Channel ki existing posts nahi hatayi gayi.',reply_markup=back()); return
  if data=='help':
-  await q.edit_message_text('1) Create Gaming Post dabao.\n2) Photos add karo; har latest step ke neeche Done/More buttons aayenge.\n3) Apna ya generated BGMI/PUBG caption choose karo.\n4) Preview ke baad Auto Post ya Manual Post choose karo.\n5) Channel connect karne ke liye bot ko admin + Post Messages permission do, phir @username, numeric ID, ya t.me link bhejo.\n6) Post History se records dekho ya delete karo.\n\nNote: bot photos apne server par permanent image files ki tarah save nahi karta; photo IDs aur post metadata hi rakhta hai. Telegram par pehle se bheji gayi photos ko bot cloud se globally delete nahi kar sakta.',reply_markup=back()); return
+  await q.edit_message_text('1) Create Gaming Post\n2) Photos bhejo, Done dabao\n3) Apna ya generated BGMI/PUBG caption choose karo\n4) Preview dekho\n5) Auto Post ya Manual Post choose karo.\n\nAuto Post ke liye bot channel admin + Post Messages permission zaroori hai. Thumbnail Maker first photo par title text overlay karta hai; ise optional feature ke roop mein alag se use kar sakte ho.',reply_markup=back()); return
 
 async def send_preview(context,uid,f):
  await send_album(context,uid,f['photos'],f['caption'])
@@ -147,12 +134,7 @@ async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
   f['caption']=txt; f['step']='preview'; await send_preview(context,uid,f); await msg.reply_text('👆 Post preview ready hai. Choose:',reply_markup=post_buttons()); return
  if f.get('step')=='connect':
   try:
-   target=txt.strip()
-   if target.startswith('https://t.me/') or target.startswith('http://t.me/'):
-    target='@'+target.rstrip('/').split('/')[-1]
-   if target.startswith('t.me/'):
-    target='@'+target.rstrip('/').split('/')[-1]
-   chat=await context.bot.get_chat(target); await verify_channel(context,chat.id); set_user_channel(uid,str(chat.id)); FLOW.pop(uid,None)
+   chat=await context.bot.get_chat(txt); await verify_channel(context,chat.id); set_user_channel(uid,str(chat.id)); FLOW.pop(uid,None)
    await msg.reply_text(f'✅ Channel connected: {chat.title or chat.username or chat.id}',reply_markup=menu())
   except TelegramError as e: await msg.reply_text('❌ Connect nahi hua. Bot admin, channel ID aur Post Messages permission check karo.\n'+str(e)[:220],reply_markup=back())
   return
@@ -170,6 +152,12 @@ async def my_chat_member(update:Update,context:ContextTypes.DEFAULT_TYPE):
   except Exception: log.exception('Could not auto-connect channel %s',chat.id)
 async def cancel(update:Update,context:ContextTypes.DEFAULT_TYPE):
  FLOW.pop(update.effective_user.id,None); await update.effective_message.reply_text('Cancelled.',reply_markup=menu())
+async def text_router(update,context):
+ if await make_thumbnail(update,context): return
+ await handle_text(update,context)
+async def photo_router(update,context):
+ if await handle_thumb_photo(update,context): return
+ await handle_photo(update,context)
 async def post_init(app): init_db(); log.info('%s started',BOT_NAME)
 def main():
  if not TOKEN: raise SystemExit('Set BOT_TOKEN in .env before running.')
