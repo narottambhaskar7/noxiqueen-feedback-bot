@@ -41,7 +41,8 @@ CAPTIONS = {
 def menu():
  return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel'), InlineKeyboardButton('❓ Help', callback_data='help')]])
 def back(): return InlineKeyboardMarkup([[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])
-def photo_buttons(): return InlineKeyboardMarkup([[InlineKeyboardButton('✅ All Photos Done', callback_data='photos_done')], [InlineKeyboardButton('❌ Cancel', callback_data='home')]])
+def photo_buttons():
+ return InlineKeyboardMarkup([[InlineKeyboardButton('➕ Add More Photos', callback_data='photos_more')], [InlineKeyboardButton('✅ Done — Next Step', callback_data='photos_done')], [InlineKeyboardButton('❌ Cancel', callback_data='home')]])
 def caption_buttons():
  rows=[[InlineKeyboardButton('✍️ Write My Own Caption', callback_data='own_caption')],[InlineKeyboardButton('✨ Generate Gaming Caption', callback_data='auto_caption')],[InlineKeyboardButton('❌ Cancel', callback_data='home')]]
  return InlineKeyboardMarkup(rows)
@@ -62,9 +63,24 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
   await q.edit_message_text('📸 Apni 1–10 photos bhejo (ek-ek karke ya Telegram album mein). Har photo add hone ke baad yahin Done dabana. Collage nahi banega—photos album mein separate rahengi.',reply_markup=photo_buttons()); return
  if data=='photos_done':
   f=FLOW.get(uid)
-  if not f or f['step']!='photos' or not f['photos']:
-   await q.edit_message_text('Pehle kam se kam ek photo bhejo.',reply_markup=photo_buttons()); return
-  f['step']='caption_choice'; await q.edit_message_text('📝 Caption kaise banana hai?',reply_markup=caption_buttons()); return
+  if not f or f['step']!='photos':
+   await q.edit_message_text('Photo session nahi mila. Main Menu se Create Gaming Post dobara shuru karo.',reply_markup=back()); return
+  if not f['photos']:
+   await q.edit_message_text('Pehle kam se kam ek photo bhejo, phir Done dabao.',reply_markup=photo_buttons()); return
+  if (f.get('caption') or '').strip():
+   f['step']='preview'
+   await send_preview(context,uid,f)
+   await q.edit_message_text('✅ Photo ke saath diya gaya caption use kar liya. Ye raha preview:',reply_markup=post_buttons())
+  else:
+   f['step']='caption_choice'; await q.edit_message_text('📝 Caption kaise banana hai?',reply_markup=caption_buttons())
+  return
+ if data=='photos_more':
+  f=FLOW.get(uid)
+  if not f or f.get('step')!='photos':
+   await q.edit_message_text('Photo session expire ho gaya. Main Menu se dobara shuru karo.',reply_markup=back()); return
+  await q.answer('Ab aur photos bhej sakte ho.')
+  await q.message.reply_text(f'📸 Aur photos bhejo. Abhi {len(f["photos"])} / 10 hain.',reply_markup=photo_buttons())
+  return
  if data=='own_caption':
   f=FLOW.get(uid)
   if not f: await q.edit_message_text('Session expire. /start dabao.',reply_markup=back()); return
@@ -100,14 +116,12 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
    fid=create_feedback(uid,f['caption'],len(f['photos']),'MANUAL'); update_feedback_status(fid,'MANUAL_READY','')
    FLOW.pop(uid,None); await q.edit_message_text(f'📤 Manual post ready hai. Upar jo preview album aur caption mila hai, use apne channel par manually forward/post kar sakte ho.\nID: #{fid}',reply_markup=back())
   return
- if data=='thumb_help':
-  await q.edit_message_text('🖼️ Thumbnail Maker\n\n/thumbnail bhejo, phir photo aur title text bhejo. Bot photo par title overlay karke thumbnail dega. Ye basic design hai; photo ko samajhkar AI caption nahi banata.',reply_markup=back()); return
  if data=='channel':
   user=get_user(uid); await q.edit_message_text('📡 CHANNEL STATUS\n\n'+('Connected channel ID: '+str(user['channel']) if user.get('channel') else 'Abhi channel connect nahi hai.')+'\n\nBot ko channel mein admin banao aur Post Messages permission do. Auto-detection na ho to public channel ke liye /connect @channelusername use karo.',reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔗 Connect by username/ID',callback_data='connect')],[InlineKeyboardButton('🏠 Main Menu',callback_data='home')]])); return
  if data=='connect':
   FLOW[uid]={'step':'connect'}; await q.edit_message_text('Channel ka @username ya numeric ID bhejo. Bot pehle se channel admin hona chahiye aur Post Messages permission honi chahiye.',reply_markup=back()); return
  if data=='help':
-  await q.edit_message_text('1) Create Gaming Post\n2) Photos bhejo, Done dabao\n3) Apna ya generated BGMI/PUBG caption choose karo\n4) Preview dekho\n5) Auto Post ya Manual Post choose karo.\n\nAuto Post ke liye bot channel admin + Post Messages permission zaroori hai. Thumbnail Maker first photo par title text overlay karta hai; ise optional feature ke roop mein alag se use kar sakte ho.',reply_markup=back()); return
+  await q.edit_message_text('1) Create Gaming Post\n2) Photos bhejo, Done dabao\n3) Apna ya generated BGMI/PUBG caption choose karo\n4) Preview dekho\n5) Auto Post ya Manual Post choose karo.\n\nAuto Post ke liye bot channel admin + Post Messages permission zaroori hai. ',reply_markup=back()); return
 
 async def send_preview(context,uid,f):
  await send_album(context,uid,f['photos'],f['caption'])
@@ -125,7 +139,12 @@ async def handle_photo(update:Update,context:ContextTypes.DEFAULT_TYPE):
  if not f or f.get('step')!='photos': await msg.reply_text('Naya post banane ke liye /start → Create Gaming Post dabao.'); return
  pid=msg.photo[-1].file_id
  if pid not in f['photos'] and len(f['photos'])<10: f['photos'].append(pid)
- await msg.reply_text(f'📸 Photo add ho gayi. Total: {len(f["photos"])} / 10',reply_markup=photo_buttons())
+ if len(f['photos']) == 1 and (msg.caption or '').strip() and not f.get('caption'):
+  f['caption']=(msg.caption or '').strip()[:900]
+ if len(f['photos'])>=10:
+  await msg.reply_text('✅ Photo add ho gayi. Total: 10 / 10 — ab Done dabao.',reply_markup=photo_buttons())
+ else:
+  await msg.reply_text(f'✅ Photo add ho gayi. Total: {len(f["photos"])} / 10. Aur photos bhej sakte ho ya Done dabao.',reply_markup=photo_buttons())
 async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
  uid=update.effective_user.id; msg=update.effective_message; txt=(msg.text or '').strip(); f=FLOW.get(uid)
  if not f: await msg.reply_text('Menu ke liye /start dabao.',reply_markup=menu()); return
@@ -153,10 +172,8 @@ async def my_chat_member(update:Update,context:ContextTypes.DEFAULT_TYPE):
 async def cancel(update:Update,context:ContextTypes.DEFAULT_TYPE):
  FLOW.pop(update.effective_user.id,None); await update.effective_message.reply_text('Cancelled.',reply_markup=menu())
 async def text_router(update,context):
- if await make_thumbnail(update,context): return
  await handle_text(update,context)
 async def photo_router(update,context):
- if await handle_thumb_photo(update,context): return
  await handle_photo(update,context)
 async def post_init(app): init_db(); log.info('%s started',BOT_NAME)
 def main():
