@@ -93,11 +93,6 @@ CAPTIONS = {
  ]
 }
 
-def with_brand_hashtags(caption):
- tags = '#WalterBlack #BGMI #PUBGMobile #Gaming'
- if '#WalterBlack' not in caption:
-  caption = caption.rstrip() + '\n\n' + tags
- return caption
 
 def menu():
  return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('🗂️ Post History', callback_data='history')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel'), InlineKeyboardButton('❓ Help', callback_data='help')]])
@@ -178,7 +173,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
  if data.startswith('style:'):
   f=FLOW.get(uid)
   if not f: await q.edit_message_text('Session expire. /start dabao.',reply_markup=back()); return
-  f['caption']=with_brand_hashtags(random.choice(CAPTIONS.get(data[6:],CAPTIONS['🚀 Trending Gaming'])))
+  f['caption']=random.choice(CAPTIONS.get(data[6:],CAPTIONS['🚀 Trending Gaming']))
   f['step']='preview'; await q.edit_message_text('✅ Caption ready. Preview neeche bhej raha hoon.')
   await send_preview(context,uid,f)
   await context.bot.send_message(chat_id=uid, text='👆 Preview ke neeche se next action choose karo:', reply_markup=post_buttons()); return
@@ -249,7 +244,7 @@ async def handle_photo(update:Update,context:ContextTypes.DEFAULT_TYPE):
  if pid not in f['photos'] and len(f['photos'])<10:
   f['photos'].append(pid)
  if len(f['photos']) == 1 and (msg.caption or '').strip() and not f.get('caption'):
-  f['caption']=with_brand_hashtags((msg.caption or '').strip()[:850])
+  f['caption']=(msg.caption or '').strip()[:850]
  # Restart a short debounce timer; album messages arrive as separate updates.
  old_task = PHOTO_BATCH_TASKS.get(uid)
  if old_task and not old_task.done():
@@ -260,7 +255,7 @@ async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
  if not f: await msg.reply_text('Menu ke liye /start dabao.',reply_markup=menu()); return
  if f.get('step')=='own_caption':
   if len(txt)>900: await msg.reply_text('Caption 900 characters se chhota rakho.'); return
-  f['caption']=with_brand_hashtags(txt); f['step']='preview'; await msg.reply_text('✅ Caption save ho gaya. Preview neeche hai.')
+  f['caption']=txt; f['step']='preview'; await msg.reply_text('✅ Caption save ho gaya. Preview neeche hai.')
   await send_preview(context,uid,f)
   await msg.reply_text('👆 Preview ke neeche se next action choose karo:',reply_markup=post_buttons()); return
  if f.get('step')=='connect':
