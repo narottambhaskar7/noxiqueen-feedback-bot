@@ -92,7 +92,15 @@ def update_feedback_status(feedback_id, status, channel=""):
 
 
 def add_feedback_photo(feedback_id, photo_id):
-    pass
+    # Photo file IDs are intentionally not persisted as uploaded image files.
+    return None
+
+
+def delete_all_feedback(user_id):
+    """Delete this user's saved post-history records, not Telegram messages/media."""
+    with connect() as c:
+        cur = c.execute("DELETE FROM feedback WHERE user_id=?", (user_id,))
+        return cur.rowcount
 
 
 def get_feedback(feedback_id, user_id=None):
