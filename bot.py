@@ -18,24 +18,24 @@ ALBUM_TASKS = {}
 
 CAPTIONS = {
  '🔥 Clutch & Highlights': [
-  '🔥 CLUTCH MODE: ON! 🎯\nLast zone, full pressure, clean finish.\n\n#BGMI #PUBGMobile #Gaming #Clutch',
-  '⚡ One squad. One chance. TOTAL DOMINATION. 🏆\n\n#BGMI #PUBG #GamingHighlights #Clutch',
-  '🎯 Aim locked. Focus max. Highlight secured. 🔥\n\n#PUBGMobile #BGMI #GamerLife'],
+  '🔥 CLUTCH MODE: ON! 🎯\nLast zone, full pressure, clean finish.\n\n#BGMI #WalterBlackMobile #Gaming #Clutch',
+  '⚡ One squad. One chance. TOTAL DOMINATION. 🏆\n\n#BGMI #WalterBlack #GamingHighlights #Clutch',
+  '🎯 Aim locked. Focus max. Highlight secured. 🔥\n\n#WalterBlackMobile #BGMI #GamerLife'],
  '👑 Royal / Pro Player': [
-  '👑 ROYAL GAMEPLAY — BUILT DIFFERENT.\nSkill speaks louder than words. ⚡\n\n#BGMI #PUBGMobile #ProPlayer',
-  '🏆 No luck, just game sense. Welcome to the lobby! 👑\n\n#BGMI #PUBG #GamingCommunity'],
+  '👑 ROYAL GAMEPLAY — BUILT DIFFERENT.\nSkill speaks louder than words. ⚡\n\n#BGMI #WalterBlackMobile #ProPlayer',
+  '🏆 No luck, just game sense. Welcome to the lobby! 👑\n\n#BGMI #WalterBlack #GamingCommunity'],
  '💀 Intense Battle': [
-  '💀 Every second counts. Every move matters.\nTHE BATTLE IS ON! 🔥\n\n#BGMI #PUBGMobile #BattleRoyale',
-  '⚔️ Pressure rising. Enemies closing in. We do not back down.\n\n#PUBG #BGMI #IntenseGameplay'],
+  '💀 Every second counts. Every move matters.\nTHE BATTLE IS ON! 🔥\n\n#BGMI #WalterBlackMobile #BattleRoyale',
+  '⚔️ Pressure rising. Enemies closing in. We do not back down.\n\n#WalterBlack #BGMI #IntenseGameplay'],
  '🌑 Dark Gaming': [
-  '🌑 SILENT MOVES. DEADLY FINISH. 🖤\nThe shadows belong to the skilled.\n\n#BGMI #PUBGMobile #DarkGaming',
-  '🖤 No noise. No fear. Just precision. 🎯\n\n#Gaming #BGMI #PUBG'],
+  '🌑 SILENT MOVES. DEADLY FINISH. 🖤\nThe shadows belong to the skilled.\n\n#BGMI #WalterBlackMobile #DarkGaming',
+  '🖤 No noise. No fear. Just precision. 🎯\n\n#Gaming #BGMI #WalterBlack'],
  '😂 Funny Moments': [
-  '😂 Plan: perfect. Execution: questionable. Result: CONTENT! 🤣\n\n#BGMI #PUBGMobile #FunnyGaming',
-  '🤣 Bro thought it was an easy lobby… surprise! 💥\n\n#PUBG #BGMI #GamingMemes'],
+  '😂 Plan: perfect. Execution: questionable. Result: CONTENT! 🤣\n\n#BGMI #WalterBlackMobile #FunnyGaming',
+  '🤣 Bro thought it was an easy lobby… surprise! 💥\n\n#WalterBlack #BGMI #GamingMemes'],
  '🚀 Trending Gaming': [
-  '🚀 NEW HIGHLIGHT DROP! 🔥 Rate this play from 1–10 👇\n\n#BGMI #PUBGMobile #GamingReels #ViralGaming',
-  '🔥 WATCH TILL THE END! 🎯 This moment hits different.\n\n#BGMI #PUBG #GamingHighlights #Gamer'],
+  '🚀 NEW HIGHLIGHT DROP! 🔥 Rate this play from 1–10 👇\n\n#BGMI #WalterBlackMobile #GamingReels #ViralGaming',
+  '🔥 WATCH TILL THE END! 🎯 This moment hits different.\n\n#BGMI #WalterBlack #GamingHighlights #Gamer'],
 }
 
 def menu():
