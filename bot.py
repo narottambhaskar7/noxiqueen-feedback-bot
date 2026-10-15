@@ -100,7 +100,7 @@ def with_brand_hashtags(caption):
  return caption
 
 def menu():
- return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel'), InlineKeyboardButton('❓ Help', callback_data='help')]])
+ return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('🗂️ Post History', callback_data='history')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel'), InlineKeyboardButton('❓ Help', callback_data='help')]])
 def back(): return InlineKeyboardMarkup([[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])
 def photo_buttons():
  return InlineKeyboardMarkup([[InlineKeyboardButton('➕ Add More Photos', callback_data='photos_more')], [InlineKeyboardButton('✅ Done — Next Step', callback_data='photos_done')], [InlineKeyboardButton('❌ Cancel', callback_data='home')]])
@@ -119,6 +119,24 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
  q=update.callback_query; await q.answer(); uid=q.from_user.id; data=q.data
  u=get_user(uid,q.from_user.username or '',q.from_user.full_name or '')
  if data=='home': await show_home(q,uid); return
+ if data=='history':
+  rows = list_feedback(uid, limit=20)
+  if not rows:
+   await q.edit_message_text('🗂️ Abhi koi saved post history nahi hai.', reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🗑️ Delete All History', callback_data='delete_history')],[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])); return
+  lines = ['🗂️ YOUR POST HISTORY (latest 20)', '']
+  for item in rows:
+   stamp = str(item.get('created_at', ''))[:16].replace('T', ' ')
+   lines.append(f"#{item['id']} · {item['status']} · {item['photo_count']} photo(s) · {stamp}")
+  lines += ['', '⚠️ Yahan se history delete karne par sirf bot ke saved records delete honge. Channel ke posts nahi hatenge.']
+  await q.edit_message_text('\n'.join(lines), reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🗑️ Delete All History', callback_data='delete_history')],[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])); return
+ if data=='delete_history':
+  await q.edit_message_text('⚠️ Kya tum bot mein saved saari post/feedback history delete karna chahte ho?\n\nIsse sirf bot ki history clear hogi. Channel par published posts bilkul delete nahi hongi.', reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('✅ Yes, Delete History', callback_data='confirm_delete_history')],[InlineKeyboardButton('❌ Cancel', callback_data='cancel_delete_history')]])); return
+ if data=='confirm_delete_history':
+  deleted = delete_all_feedback(uid)
+  await q.edit_message_text(f'🗑️ Bot history clear ho gayi. {deleted} record(s) delete kiye.\n\nChannel ke posts ko touch nahi kiya gaya.', reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🗂️ View History', callback_data='history')],[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])); return
+ if data=='cancel_delete_history':
+  rows = list_feedback(uid, limit=20)
+  await q.edit_message_text(f'✅ Delete cancel kar diya. Tumhari history safe hai ({len(rows)} recent record(s)).', reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🗂️ Post History', callback_data='history')],[InlineKeyboardButton('🏠 Main Menu', callback_data='home')]])); return
  if data=='new':
   FLOW[uid]={'step':'photos','photos':[],'caption':''}
   await q.edit_message_text('📸 Apni 1–10 photos bhejo (ek-ek karke ya Telegram album mein). Har photo add hone ke baad yahin Done dabana. Collage nahi banega—photos album mein separate rahengi.',reply_markup=photo_buttons()); return
