@@ -13,30 +13,91 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name
 logging.getLogger('httpx').setLevel(logging.WARNING)
 log = logging.getLogger('noxiqueen')
 FLOW = {}
+PHOTO_BATCH_TASKS = {}
+PHOTO_BATCH_LOCKS = {}
 ALBUMS = {}
 ALBUM_TASKS = {}
 
 CAPTIONS = {
  '🔥 Clutch & Highlights': [
-  '🔥 CLUTCH MODE: ON! 🎯\nLast zone, full pressure, clean finish.\n\n#BGMI #WalterBlackMobile #Gaming #Clutch',
-  '⚡ One squad. One chance. TOTAL DOMINATION. 🏆\n\n#BGMI #WalterBlack #GamingHighlights #Clutch',
-  '🎯 Aim locked. Focus max. Highlight secured. 🔥\n\n#WalterBlackMobile #BGMI #GamerLife'],
+  '🔥 CLUTCH MODE: ON! Last zone, full pressure, clean finish. 🎯',
+  '⚡ One squad. One chance. TOTAL DOMINATION. 🏆',
+  '🎯 Aim locked. Focus max. Highlight secured. 🔥',
+  '💥 They pushed together, but they went back to lobby together.',
+  '🏆 Calm hands, sharp aim, clutch finish. That is the play.',
+  '🔥 Turning impossible fights into unforgettable highlights.',
+  '🎮 One clean spray can change the whole match.',
+  '⚔️ Outnumbered, not outplayed. Clutch secured!',
+  '💯 No panic in the final circle. Just pure game sense.',
+  '🚀 The kind of finish you replay twice!',
+ ],
  '👑 Royal / Pro Player': [
-  '👑 ROYAL GAMEPLAY — BUILT DIFFERENT.\nSkill speaks louder than words. ⚡\n\n#BGMI #WalterBlackMobile #ProPlayer',
-  '🏆 No luck, just game sense. Welcome to the lobby! 👑\n\n#BGMI #WalterBlack #GamingCommunity'],
+  '👑 ROYAL GAMEPLAY — BUILT DIFFERENT. Skill speaks louder than words.',
+  '🏆 No luck, just game sense. Welcome to the lobby!',
+  '🎯 Consistency makes the difference. Another clean play.',
+  '⚡ Play smart, move sharp, finish strong.',
+  '👑 Lobby mein entry royal, exit legendary.',
+  '🔥 Practice behind the scenes, confidence in the fight.',
+  '💎 Clean movement. Clear calls. Solid teamwork.',
+  '🏆 Every match is a chance to level up.',
+  '🎮 Not just playing the game—reading the whole lobby.',
+  '🚀 Pro mindset, fearless gameplay.',
+ ],
  '💀 Intense Battle': [
-  '💀 Every second counts. Every move matters.\nTHE BATTLE IS ON! 🔥\n\n#BGMI #WalterBlackMobile #BattleRoyale',
-  '⚔️ Pressure rising. Enemies closing in. We do not back down.\n\n#WalterBlack #BGMI #IntenseGameplay'],
+  '💀 Every second counts. Every move matters. THE BATTLE IS ON!',
+  '⚔️ Pressure rising. Enemies closing in. We do not back down.',
+  '🔥 Final circle, full focus, zero hesitation.',
+  '🎯 The fight got intense, but the squad stayed ready.',
+  '💥 One decision. One push. One big moment.',
+  '🚨 Danger close—time to lock in!',
+  '🛡️ Hold the line, cover the squad, win the fight.',
+  '⚡ Chaos around us, focus within us.',
+  '🎮 Every footstep tells a story. Stay alert!',
+  '🏁 The pressure was real. The finish was worth it.',
+ ],
  '🌑 Dark Gaming': [
-  '🌑 SILENT MOVES. DEADLY FINISH. 🖤\nThe shadows belong to the skilled.\n\n#BGMI #WalterBlackMobile #DarkGaming',
-  '🖤 No noise. No fear. Just precision. 🎯\n\n#Gaming #BGMI #WalterBlack'],
+  '🌑 SILENT MOVES. DEADLY FINISH. The shadows belong to the skilled.',
+  '🖤 No noise. No fear. Just precision.',
+  '🌘 Quiet approach, loud result.',
+  '💀 The dark lobby has a new highlight.',
+  '⚫ Stay unseen, stay sharp, strike at the right time.',
+  '🌑 Cold focus. Clean execution.',
+  '🖤 The calmest player can make the loudest play.',
+  '🎯 Shadows move. Targets fall. Highlight saved.',
+  '🌒 Mystery in the movement, precision in the aim.',
+  '⚡ Dark mode gameplay, bright scoreboard.',
+ ],
  '😂 Funny Moments': [
-  '😂 Plan: perfect. Execution: questionable. Result: CONTENT! 🤣\n\n#BGMI #WalterBlackMobile #FunnyGaming',
-  '🤣 Bro thought it was an easy lobby… surprise! 💥\n\n#WalterBlack #BGMI #GamingMemes'],
+  '😂 Plan: perfect. Execution: questionable. Result: CONTENT! 🤣',
+  '🤣 Bro thought it was an easy lobby… surprise!',
+  '🎮 My aim has two moods: pro and potato.',
+  '😂 Squad said “trust me” … and then this happened.',
+  '💀 Enemy confused, teammates laughing, clip saved.',
+  '🤣 It was not a mistake. It was a surprise strategy.',
+  '😂 When the plan works by pure accident.',
+  '🎯 Aim loading… please wait!',
+  '🤣 The lobby was serious until we arrived.',
+  '🔥 100% confidence, 2% planning, 200% entertainment.',
+ ],
  '🚀 Trending Gaming': [
-  '🚀 NEW HIGHLIGHT DROP! 🔥 Rate this play from 1–10 👇\n\n#BGMI #WalterBlackMobile #GamingReels #ViralGaming',
-  '🔥 WATCH TILL THE END! 🎯 This moment hits different.\n\n#BGMI #WalterBlack #GamingHighlights #Gamer'],
+  '🚀 NEW HIGHLIGHT DROP! Rate this play from 1–10 👇',
+  '🔥 WATCH TILL THE END! This moment hits different.',
+  '🎮 BGMI vibes, squad energy, unforgettable moments.',
+  '💥 One clip, one story, one crazy finish!',
+  '📸 Saving the moment, sharing the grind.',
+  '⚡ If you blinked, you missed the best part!',
+  '🏆 Another gaming memory added to the collection.',
+  '🔥 Rate the gameplay and drop your favourite moment!',
+  '🎯 Precision, patience, and a little bit of chaos.',
+  '🚀 Fresh gameplay drop—show some love to the squad!',
+ ]
 }
+
+def with_brand_hashtags(caption):
+ tags = '#WalterBlack #BGMI #PUBGMobile #Gaming'
+ if '#WalterBlack' not in caption:
+  caption = caption.rstrip() + '\n\n' + tags
+ return caption
 
 def menu():
  return InlineKeyboardMarkup([[InlineKeyboardButton('🎮 Create Gaming Post', callback_data='new')], [InlineKeyboardButton('📡 Connected Channel', callback_data='channel'), InlineKeyboardButton('❓ Help', callback_data='help')]])
@@ -96,7 +157,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
  if data.startswith('style:'):
   f=FLOW.get(uid)
   if not f: await q.edit_message_text('Session expire. /start dabao.',reply_markup=back()); return
-  f['caption']=random.choice(CAPTIONS.get(data[6:],CAPTIONS['🚀 Trending Gaming']))
+  f['caption']=with_brand_hashtags(random.choice(CAPTIONS.get(data[6:],CAPTIONS['🚀 Trending Gaming'])))
   f['step']='preview'; await send_preview(context,uid,f); await q.edit_message_text('👆 Ye raha aapka post preview. Kya karna hai?',reply_markup=post_buttons()); return
  if data=='post_auto' or data=='post_manual':
   f=FLOW.get(uid)
@@ -117,7 +178,7 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
    FLOW.pop(uid,None); await q.edit_message_text(f'📤 Manual post ready hai. Upar jo preview album aur caption mila hai, use apne channel par manually forward/post kar sakte ho.\nID: #{fid}',reply_markup=back())
   return
  if data=='channel':
-  user=get_user(uid); await q.edit_message_text('📡 CHANNEL STATUS\n\n'+('Connected channel ID: '+str(user['channel']) if user.get('channel') else 'Abhi channel connect nahi hai.')+'\n\nBot ko channel mein admin banao aur Post Messages permission do. Auto-detection na ho to public channel ke liye /connect @channelusername use karo.',reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔗 Connect by username/ID',callback_data='connect')],[InlineKeyboardButton('🏠 Main Menu',callback_data='home')]])); return
+  user=get_user(uid); await q.edit_message_text('📡 CHANNEL STATUS\n\n'+('Connected channel ID: '+str(user['channel']) if user.get('channel') else 'Abhi channel connect nahi hai.')+'\n\nBot ko channel mein admin banao aur Post Messages permission do. Auto-detection na ho to Connect by username/ID dabao ya /connect @channelusername bhejo.',reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔗 Connect by username/ID',callback_data='connect')],[InlineKeyboardButton('🏠 Main Menu',callback_data='home')]])); return
  if data=='connect':
   FLOW[uid]={'step':'connect'}; await q.edit_message_text('Channel ka @username ya numeric ID bhejo. Bot pehle se channel admin hona chahiye aur Post Messages permission honi chahiye.',reply_markup=back()); return
  if data=='help':
@@ -134,26 +195,52 @@ async def verify_channel(context,channel):
  me=await context.bot.get_me(); m=await context.bot.get_chat_member(chat_id=channel,user_id=me.id)
  if m.status not in (ChatMemberStatus.ADMINISTRATOR,ChatMemberStatus.CREATOR): raise TelegramError('Bot channel admin nahi hai.')
  if m.status==ChatMemberStatus.ADMINISTRATOR and not getattr(m,'can_post_messages',False): raise TelegramError('Bot ke paas Post Messages permission nahi hai.')
+async def _send_photo_batch_status(context, uid, chat_id):
+ # Telegram delivers each item in an album as a separate update. Wait briefly,
+ # then send one status message for the whole burst instead of one per photo.
+ try:
+  await asyncio.sleep(1.0)
+  f = FLOW.get(uid)
+  if not f or f.get('step') != 'photos':
+   return
+  count = len(f.get('photos', []))
+  if count >= 10:
+   text = '✅ Album/photos add ho gayi. Total: 10 / 10 — ab Done dabao.'
+  else:
+   text = f'✅ Photos add ho gayi. Total: {count} / 10. Aur photos bhejo ya Done dabao.'
+  await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=photo_buttons())
+ except Exception:
+  log.exception('Could not send batched photo status for user %s', uid)
+ finally:
+  PHOTO_BATCH_TASKS.pop(uid, None)
+
 async def handle_photo(update:Update,context:ContextTypes.DEFAULT_TYPE):
  uid=update.effective_user.id; msg=update.effective_message; f=FLOW.get(uid)
- if not f or f.get('step')!='photos': await msg.reply_text('Naya post banane ke liye /start → Create Gaming Post dabao.'); return
+ if not f or f.get('step')!='photos':
+  await msg.reply_text('Naya post banane ke liye /start → Create Gaming Post dabao.')
+  return
  pid=msg.photo[-1].file_id
- if pid not in f['photos'] and len(f['photos'])<10: f['photos'].append(pid)
+ if pid not in f['photos'] and len(f['photos'])<10:
+  f['photos'].append(pid)
  if len(f['photos']) == 1 and (msg.caption or '').strip() and not f.get('caption'):
-  f['caption']=(msg.caption or '').strip()[:900]
- if len(f['photos'])>=10:
-  await msg.reply_text('✅ Photo add ho gayi. Total: 10 / 10 — ab Done dabao.',reply_markup=photo_buttons())
- else:
-  await msg.reply_text(f'✅ Photo add ho gayi. Total: {len(f["photos"])} / 10. Aur photos bhej sakte ho ya Done dabao.',reply_markup=photo_buttons())
+  f['caption']=with_brand_hashtags((msg.caption or '').strip()[:850])
+ # Restart a short debounce timer; album messages arrive as separate updates.
+ old_task = PHOTO_BATCH_TASKS.get(uid)
+ if old_task and not old_task.done():
+  old_task.cancel()
+ PHOTO_BATCH_TASKS[uid] = asyncio.create_task(_send_photo_batch_status(context, uid, msg.chat_id))
 async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
  uid=update.effective_user.id; msg=update.effective_message; txt=(msg.text or '').strip(); f=FLOW.get(uid)
  if not f: await msg.reply_text('Menu ke liye /start dabao.',reply_markup=menu()); return
  if f.get('step')=='own_caption':
   if len(txt)>900: await msg.reply_text('Caption 900 characters se chhota rakho.'); return
-  f['caption']=txt; f['step']='preview'; await send_preview(context,uid,f); await msg.reply_text('👆 Post preview ready hai. Choose:',reply_markup=post_buttons()); return
+  f['caption']=with_brand_hashtags(txt); f['step']='preview'; await send_preview(context,uid,f); await msg.reply_text('👆 Post preview ready hai. Choose:',reply_markup=post_buttons()); return
  if f.get('step')=='connect':
   try:
-   chat=await context.bot.get_chat(txt); await verify_channel(context,chat.id); set_user_channel(uid,str(chat.id)); FLOW.pop(uid,None)
+   target = int(txt) if txt.lstrip('-').isdigit() else txt
+   chat=await context.bot.get_chat(target)
+   if chat.type != 'channel': raise TelegramError('Ye ID/username Telegram channel ka nahi hai.')
+   await verify_channel(context,chat.id); set_user_channel(uid,str(chat.id)); FLOW.pop(uid,None)
    await msg.reply_text(f'✅ Channel connected: {chat.title or chat.username or chat.id}',reply_markup=menu())
   except TelegramError as e: await msg.reply_text('❌ Connect nahi hua. Bot admin, channel ID aur Post Messages permission check karo.\n'+str(e)[:220],reply_markup=back())
   return
@@ -169,6 +256,26 @@ async def my_chat_member(update:Update,context:ContextTypes.DEFAULT_TYPE):
    set_user_channel(actor.id,str(chat.id))
    await context.bot.send_message(actor.id,f'✅ Channel auto-detected and connected: {chat.title or chat.id}\nID: {chat.id}')
   except Exception: log.exception('Could not auto-connect channel %s',chat.id)
+async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ uid=update.effective_user.id
+ get_user(uid, update.effective_user.username or '', update.effective_user.full_name or '')
+ if not context.args:
+  FLOW[uid]={'step':'connect'}
+  await update.effective_message.reply_text('Channel ka @username ya numeric ID bhejo. Bot channel admin aur Post Messages permission ke saath hona chahiye.', reply_markup=back())
+  return
+ target=context.args[0].strip()
+ try:
+  chat=await context.bot.get_chat(int(target) if target.lstrip('-').isdigit() else target)
+  if chat.type != 'channel':
+   await update.effective_message.reply_text('❌ Ye channel nahi lag raha. Channel ka @username ya numeric ID bhejo.')
+   return
+  await verify_channel(context, chat.id)
+  set_user_channel(uid, str(chat.id)); FLOW.pop(uid, None)
+  await update.effective_message.reply_text(f'✅ Channel connected: {chat.title or chat.username or chat.id}\nID: {chat.id}', reply_markup=menu())
+ except TelegramError as e:
+  log.exception('Channel connect failed for user %s target %s', uid, target)
+  await update.effective_message.reply_text('❌ Channel connect nahi hua. Check karo: username public/sahi ho, bot isi channel ka admin ho, aur Post Messages permission ho. Agar private channel hai to numeric -100... ID use karo.\nError: '+str(e)[:250], reply_markup=back())
+
 async def cancel(update:Update,context:ContextTypes.DEFAULT_TYPE):
  FLOW.pop(update.effective_user.id,None); await update.effective_message.reply_text('Cancelled.',reply_markup=menu())
 async def text_router(update,context):
@@ -179,7 +286,7 @@ async def post_init(app): init_db(); log.info('%s started',BOT_NAME)
 def main():
  if not TOKEN: raise SystemExit('Set BOT_TOKEN in .env before running.')
  app=Application.builder().token(TOKEN).post_init(post_init).build()
- app.add_handler(CommandHandler('start',start)); app.add_handler(CommandHandler('cancel',cancel))
+ app.add_handler(CommandHandler('start',start)); app.add_handler(CommandHandler('connect',connect_command)); app.add_handler(CommandHandler('cancel',cancel))
  app.add_handler(CallbackQueryHandler(callback)); app.add_handler(ChatMemberHandler(my_chat_member,ChatMemberHandler.MY_CHAT_MEMBER))
  app.add_handler(MessageHandler(filters.PHOTO,photo_router)); app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,text_router))
  app.run_polling(allowed_updates=Update.ALL_TYPES)
