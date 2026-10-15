@@ -236,7 +236,14 @@ async def _send_photo_batch_status(context, uid, chat_id):
    PHOTO_BATCH_TASKS.pop(uid, None)
 
 async def handle_photo(update:Update,context:ContextTypes.DEFAULT_TYPE):
- uid=update.effective_user.id; msg=update.effective_message; f=FLOW.get(uid)
+ # Channel posts and anonymous/channel-originated updates may not have effective_user.
+ # This workflow is only for users sending photos to the bot in a private chat.
+ user = update.effective_user
+ msg = update.effective_message
+ if user is None or msg is None or msg.chat.type != "private":
+  log.debug('Ignoring photo update without a private-chat user')
+  return
+ uid=user.id; f=FLOW.get(uid)
  if not f or f.get('step')!='photos':
   await msg.reply_text('Naya post banane ke liye /start → Create Gaming Post dabao.')
   return
@@ -251,7 +258,13 @@ async def handle_photo(update:Update,context:ContextTypes.DEFAULT_TYPE):
   old_task.cancel()
  PHOTO_BATCH_TASKS[uid] = asyncio.create_task(_send_photo_batch_status(context, uid, msg.chat_id))
 async def handle_text(update:Update,context:ContextTypes.DEFAULT_TYPE):
- uid=update.effective_user.id; msg=update.effective_message; txt=(msg.text or '').strip(); f=FLOW.get(uid)
+ # Ignore channel/group-originated text; only handle direct messages from users.
+ user = update.effective_user
+ msg = update.effective_message
+ if user is None or msg is None or msg.chat.type != "private":
+  log.debug('Ignoring text update without a private-chat user')
+  return
+ uid=user.id; txt=(msg.text or '').strip(); f=FLOW.get(uid)
  if not f: await msg.reply_text('Menu ke liye /start dabao.',reply_markup=menu()); return
  if f.get('step')=='own_caption':
   if len(txt)>900: await msg.reply_text('Caption 900 characters se chhota rakho.'); return
@@ -325,6 +338,6 @@ def main():
  app=Application.builder().token(TOKEN).post_init(post_init).build()
  app.add_handler(CommandHandler('start',start)); app.add_handler(CommandHandler('connect',connect_command)); app.add_handler(CommandHandler('cancel',cancel))
  app.add_handler(CallbackQueryHandler(callback)); app.add_handler(ChatMemberHandler(my_chat_member,ChatMemberHandler.MY_CHAT_MEMBER))
- app.add_handler(MessageHandler(filters.PHOTO,photo_router)); app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,text_router)); app.add_error_handler(error_handler)
+ app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.PHOTO,photo_router)); app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND,text_router)); app.add_error_handler(error_handler)
  app.run_polling(allowed_updates=Update.ALL_TYPES)
 if __name__=='__main__': main()
